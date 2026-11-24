@@ -120,6 +120,7 @@
   .cust-panel {
     display: none; background: var(--bg); border: 1px solid var(--border);
     border-radius: 6px; padding: 10px; margin-bottom: 10px; flex-direction: column; gap: 7px;
+    position: relative;
   }
   .cust-panel.open { display: flex; }
   .cust-panel input[type="text"], .cust-panel input[type="email"], .cust-panel input[type="tel"] {
@@ -127,6 +128,36 @@
   }
   .cust-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .cust-check { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
+  .cust-suggestions {
+    display: none;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: calc(100% - 4px);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 40;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+  .cust-suggestions.open { display: block; }
+  .cust-suggestion-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cust-suggestion-item:last-child { border-bottom: none; }
+  .cust-suggestion-item:hover, .cust-suggestion-item.active {
+    background: var(--item-hover);
+  }
+  .cust-suggestion-item strong { color: var(--text); font-size: 0.86rem; }
+  .cust-suggestion-item span { color: var(--muted); font-size: 0.76rem; }
 
   .ticket-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; }
   .ticket-row {
@@ -180,6 +211,7 @@
 
   /* Settings & History Views */
   .container-scroll { flex: 1; padding: 25px; overflow-y: auto; max-width: 920px; margin: 0 auto; width: 100%; }
+  #history-view .container-scroll { max-width: 1460px; }
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .card h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   .form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
@@ -191,6 +223,21 @@
   .btn-primary { background: var(--accent); padding: 9px 15px; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
   .btn-primary:hover { background: var(--accent-hover); }
   .btn-danger { background: var(--red); padding: 6px 12px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-size: 0.85rem; }
+
+  /* Settings Item Reorder */
+  .settings-item-row { cursor: grab; transition: border-color 0.15s, opacity 0.15s, background 0.15s; }
+  .settings-item-row.dragging { opacity: 0.45; }
+  .settings-item-row.drag-over { border-color: var(--accent); background: var(--item-hover); }
+  .settings-item-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .drag-handle { color: var(--muted); font-size: 1.05rem; user-select: none; cursor: grab; letter-spacing: -1px; }
+  .settings-item-actions { display: flex; align-items: center; gap: 6px; }
+  .order-btn {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .order-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .order-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* Tender Type Buttons */
   .tender-type-group {
@@ -275,6 +322,45 @@
   .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
   .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* History Table */
+  .history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    min-width: 1080px;
+  }
+  .history-table th {
+    background: var(--panel);
+    color: var(--muted);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .history-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+  }
+  .history-table tbody tr:last-child td { border-bottom: none; }
+  .history-table tbody tr:hover { background: var(--item-hover); }
+  .history-table th.num, .history-table td.num { text-align: right; white-space: nowrap; }
+  .history-table td.nowrap { white-space: nowrap; }
+  .history-table td.items-col { min-width: 180px; max-width: 280px; line-height: 1.35; }
+  .history-table td.addr-col { min-width: 130px; max-width: 210px; }
+  .history-table .muted-dash { color: var(--muted); }
+  .history-table .tender-badge { margin-left: 0; }
+  .history-actions-cell { display: flex; gap: 6px; white-space: nowrap; }
+
   /* Modals */
   .modal-backdrop {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
@@ -338,8 +424,11 @@
 <header>
   <div class="header-left">
     <h1 id="header-shop-name">Simple Cash Register</h1>
-    <button id="csv-status-btn" class="csv-pill" onclick="handleCsvPillClick()" title="Link or unlock a CSV file on disk for automatic transaction logging">
+    <button id="csv-status-btn" class="csv-pill" onclick="handleCsvPillClick()" title="Link or unlock auto-save CSV file(s) on disk">
       ● Auto-CSV: Not Linked
+    </button>
+    <button id="customers-csv-status-btn" class="csv-pill" onclick="handleCustomersCsvPillClick()" title="Link or unlock Customer List CSV file on disk">
+      ● Customers CSV: Not Linked
     </button>
   </div>
   <div class="nav-tabs">
@@ -368,12 +457,13 @@
       <span id="cust-arrow">▼</span>
     </button>
     <div class="cust-panel" id="cust-panel">
-      <input type="text" id="cust-name" placeholder="Customer Name" oninput="updateCustLabel()">
+      <input type="text" id="cust-name" placeholder="Customer Name" autocomplete="off" oninput="onCustomerFieldInput(this)" onfocus="onCustomerFieldFocus(this)" onkeydown="onCustomerFieldKeydown(event)" onblur="scheduleHideCustomerSuggestions()">
       <div class="cust-row-2">
-        <input type="tel" id="cust-phone" placeholder="Phone Number">
-        <input type="email" id="cust-email" placeholder="Email Address">
+        <input type="tel" id="cust-phone" placeholder="Phone Number" autocomplete="off" oninput="onCustomerFieldInput(this)" onfocus="onCustomerFieldFocus(this)" onkeydown="onCustomerFieldKeydown(event)" onblur="scheduleHideCustomerSuggestions()">
+        <input type="email" id="cust-email" placeholder="Email Address" autocomplete="off" oninput="onCustomerFieldInput(this)" onfocus="onCustomerFieldFocus(this)" onkeydown="onCustomerFieldKeydown(event)" onblur="scheduleHideCustomerSuggestions()">
       </div>
-      <input type="text" id="cust-address" placeholder="Street Address">
+      <input type="text" id="cust-address" placeholder="Street Address" autocomplete="off" oninput="onCustomerFieldInput(this)" onfocus="onCustomerFieldFocus(this)" onkeydown="onCustomerFieldKeydown(event)" onblur="scheduleHideCustomerSuggestions()">
+      <div id="cust-suggestions" class="cust-suggestions"></div>
       <label class="cust-check">
         <input type="checkbox" id="cust-print-check">
         Print customer info on this receipt
@@ -413,17 +503,24 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <h2 style="border:none; margin:0; padding:0;">Transaction History</h2>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-primary" onclick="linkCsvFile()">Set Auto-Save CSV File</button>
-          <button class="btn-primary" onclick="exportHistoryCSV()">Manual Export CSV</button>
+          <button class="btn-primary" onclick="linkCsvFolder()">Set Auto-Save Folder (Both CSVs)</button>
+          <button class="btn-primary" onclick="linkCsvFile()">Set History CSV</button>
+          <button class="btn-primary" onclick="linkCustomersCsvFile()">Set Customers CSV</button>
+          <button class="btn-primary" onclick="exportHistoryCSV()">Export History CSV</button>
+          <button class="btn-primary" onclick="exportCustomersCSV()">Export Customers CSV</button>
           <button class="btn-danger" onclick="clearHistory()">Clear History</button>
         </div>
       </div>
-      <p style="font-size:0.85rem; color:var(--muted); margin-top:0;">
-        Auto-Save CSV Status: <strong id="history-csv-status">Not linked</strong>. (Always close the CSV file in Excel or LibreOffice Calc before ringing up a sale so Windows does not lock it.)
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:0; margin-bottom:6px;">
+        History CSV Status: <strong id="history-csv-status">Not linked</strong> &nbsp;|&nbsp;
+        Customers CSV Status: <strong id="customers-csv-status">Not linked</strong> (<span id="customers-count-status">0 saved customers</span>)
+      </p>
+      <p style="font-size:0.8rem; color:var(--muted); margin-top:0;">
+        Tip: Use "Set Auto-Save Folder" to save and reconnect both History and Customers CSV files in the same folder with one click. Close CSV files in Excel or LibreOffice Calc before ringing up sales so Windows does not lock them.
       </p>
 
       <div class="history-search-row">
-        <input type="text" id="history-search" placeholder="Search by customer name, phone number, or email..." oninput="onHistorySearchInput()">
+        <input type="text" id="history-search" placeholder="Search by customer name, phone, email, address, or item..." oninput="onHistorySearchInput()">
         <button class="page-btn" id="history-search-clear" onclick="clearHistorySearch()" style="display:none;">Clear</button>
       </div>
 
@@ -493,12 +590,14 @@
     </div>
 
     <div class="card">
-      <h2>Backup, Restore &amp; Auto-CSV File</h2>
+      <h2>Backup, Restore &amp; Auto-CSV Files</h2>
       <p style="font-size:0.88rem; color:var(--muted); margin-top:0;">
-        Export your shop settings, buttons, tax rate, and target CSV filename to a JSON file to back up or transfer to another computer.
+        Export your shop settings, buttons, tax rate, and target CSV filenames to a JSON file to back up or transfer to another computer.
       </p>
       <div class="form-row">
-        <button class="btn-primary" onclick="linkCsvFile()">Select Auto-Save CSV File</button>
+        <button class="btn-primary" onclick="linkCsvFolder()">Select Auto-Save Folder (Both CSVs)</button>
+        <button class="btn-primary" onclick="linkCsvFile()">Select History CSV File</button>
+        <button class="btn-primary" onclick="linkCustomersCsvFile()">Select Customers CSV File</button>
         <button class="btn-primary" onclick="exportSettingsJSON()">Export Settings (.json)</button>
         <button class="btn-primary" onclick="document.getElementById('import-json-input').click()">Import Settings (.json)</button>
         <input type="file" id="import-json-input" accept=".json" style="display:none;" onchange="importSettingsJSON(event)">
@@ -593,6 +692,7 @@
     theme: "dark",
     printCustomerDefault: true,
     csvFileName: "",
+    customersCsvFileName: "",
     receiptTop: "LANTEAN SYSTEMS\nComputer Repair & IT Services\nThank you for stopping by!",
     receiptBottom: "All sales final on software.\nThank you for your business!",
     items: [
@@ -602,19 +702,32 @@
       { id: 4, name: "Custom Labor / Part", type: "manual", price: 0 },
       { id: 5, name: "10% Discount", type: "disc_pct", price: 10 }
     ],
+    customers: [],
     history: []
   };
 
   let appData = Object.assign({}, defaultData, JSON.parse(localStorage.getItem('simplePOSData') || 'null'));
+  if (!Array.isArray(appData.customers)) appData.customers = [];
+  if (!Array.isArray(appData.history)) appData.history = [];
+  if (!Array.isArray(appData.items)) appData.items = defaultData.items.slice();
+
   let ticket = [];
   let activeDiscount = null; // { label, type: 'pct'|'fixed', value: number }
   let pendingManualItem = null;
   let selectedTenderType = 'Cash';
+  let csvDirectoryHandle = null;
+  let csvDirectoryPermissionGranted = false;
   let csvFileHandle = null;
   let csvPermissionGranted = false;
+  let customersCsvFileHandle = null;
+  let customersCsvPermissionGranted = false;
 
   const HISTORY_PAGE_SIZE = 50;
   let historyCurrentPage = 1;
+  let draggedItemIndex = null;
+  let activeCustSuggestions = [];
+  let activeCustSuggestionIndex = -1;
+  let hideCustSuggestionsTimer = null;
 
   function escapeHtml(str) {
     return String(str || '')
@@ -625,7 +738,7 @@
       .replace(/'/g, '&#39;');
   }
 
-  // --- IndexedDB Persistence for File System Handle ---
+  // --- IndexedDB Persistence for File System Handles ---
   function openHandleDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open('SimplePOSHandleDB', 1);
@@ -635,32 +748,70 @@
     });
   }
 
-  async function saveHandleToDB(handle) {
+  async function saveHandleToDB(key, handle) {
     try {
       const db = await openHandleDB();
       const tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').put(handle, 'csvFile');
+      if (handle) {
+        tx.objectStore('handles').put(handle, key);
+      } else {
+        tx.objectStore('handles').delete(key);
+      }
     } catch (e) { console.warn('Could not cache file handle:', e); }
   }
 
-  async function loadHandleFromDB() {
+  async function loadHandleFromDB(key) {
     try {
       const db = await openHandleDB();
       return await new Promise((resolve) => {
         const tx = db.transaction('handles', 'readonly');
-        const req = tx.objectStore('handles').get('csvFile');
+        const req = tx.objectStore('handles').get(key);
         req.onsuccess = () => resolve(req.result || null);
         req.onerror = () => resolve(null);
       });
     } catch (e) { return null; }
   }
 
-  async function restoreSavedCsvHandle() {
-    const savedHandle = await loadHandleFromDB();
-    if (savedHandle) {
-      csvFileHandle = savedHandle;
-      appData.csvFileName = savedHandle.name;
-      saveData();
+  async function attachHandlesFromDirectory(dirHandle) {
+    const histName = appData.csvFileName || 'register-transactions.csv';
+    const custName = appData.customersCsvFileName || 'register-customers.csv';
+    csvFileHandle = await dirHandle.getFileHandle(histName, { create: true });
+    customersCsvFileHandle = await dirHandle.getFileHandle(custName, { create: true });
+    appData.csvFileName = csvFileHandle.name;
+    appData.customersCsvFileName = customersCsvFileHandle.name;
+    csvPermissionGranted = true;
+    customersCsvPermissionGranted = true;
+    saveData();
+    await saveHandleToDB('csvFile', csvFileHandle);
+    await saveHandleToDB('customersCsvFile', customersCsvFileHandle);
+    await syncCustomersWithCsv();
+  }
+
+  async function restoreSavedCsvHandles() {
+    const savedDir = await loadHandleFromDB('csvDirectory');
+    if (savedDir) {
+      csvDirectoryHandle = savedDir;
+      try {
+        const perm = await csvDirectoryHandle.queryPermission({ mode: 'readwrite' });
+        csvDirectoryPermissionGranted = (perm === 'granted');
+      } catch (e) {
+        csvDirectoryPermissionGranted = false;
+      }
+      if (csvDirectoryPermissionGranted) {
+        try {
+          await attachHandlesFromDirectory(csvDirectoryHandle);
+          updateCsvStatusUI();
+          return;
+        } catch (e) {
+          console.warn('Could not attach files from saved folder:', e);
+        }
+      }
+    }
+
+    const savedHistHandle = await loadHandleFromDB('csvFile');
+    if (savedHistHandle) {
+      csvFileHandle = savedHistHandle;
+      appData.csvFileName = savedHistHandle.name;
       try {
         const perm = await csvFileHandle.queryPermission({ mode: 'readwrite' });
         csvPermissionGranted = (perm === 'granted');
@@ -668,10 +819,42 @@
         csvPermissionGranted = false;
       }
     }
+
+    const savedCustHandle = await loadHandleFromDB('customersCsvFile');
+    if (savedCustHandle) {
+      customersCsvFileHandle = savedCustHandle;
+      appData.customersCsvFileName = savedCustHandle.name;
+      try {
+        const perm = await customersCsvFileHandle.queryPermission({ mode: 'readwrite' });
+        customersCsvPermissionGranted = (perm === 'granted');
+      } catch (e) {
+        customersCsvPermissionGranted = false;
+      }
+    }
+
+    saveData();
+    if (customersCsvFileHandle && customersCsvPermissionGranted) {
+      await syncCustomersWithCsv();
+    }
     updateCsvStatusUI();
   }
 
   async function handleCsvPillClick() {
+    if (csvDirectoryHandle && !csvDirectoryPermissionGranted) {
+      try {
+        const perm = await csvDirectoryHandle.requestPermission({ mode: 'readwrite' });
+        csvDirectoryPermissionGranted = (perm === 'granted');
+        if (csvDirectoryPermissionGranted) {
+          await attachHandlesFromDirectory(csvDirectoryHandle);
+        }
+        updateCsvStatusUI();
+        return;
+      } catch (e) {
+        await linkCsvFolder();
+        return;
+      }
+    }
+
     if (!csvFileHandle) {
       await linkCsvFile();
       return;
@@ -689,6 +872,54 @@
     }
   }
 
+  async function handleCustomersCsvPillClick() {
+    if (csvDirectoryHandle && !csvDirectoryPermissionGranted) {
+      await handleCsvPillClick();
+      return;
+    }
+    if (!customersCsvFileHandle) {
+      await linkCustomersCsvFile();
+      return;
+    }
+    if (!customersCsvPermissionGranted) {
+      try {
+        const perm = await customersCsvFileHandle.requestPermission({ mode: 'readwrite' });
+        customersCsvPermissionGranted = (perm === 'granted');
+        if (customersCsvPermissionGranted) {
+          await syncCustomersWithCsv();
+        }
+        updateCsvStatusUI();
+      } catch (e) {
+        await linkCustomersCsvFile();
+      }
+    } else {
+      await linkCustomersCsvFile();
+    }
+  }
+
+  async function linkCsvFolder() {
+    if (!window.showDirectoryPicker) {
+      alert("Your browser does not support folder access. Use Microsoft Edge or Google Chrome, or select the History and Customers CSV files individually.");
+      return;
+    }
+    try {
+      const dirHandle = await window.showDirectoryPicker({
+        mode: 'readwrite',
+        startIn: csvDirectoryHandle || csvFileHandle || 'documents'
+      });
+      csvDirectoryHandle = dirHandle;
+      csvDirectoryPermissionGranted = true;
+      await saveHandleToDB('csvDirectory', csvDirectoryHandle);
+      await attachHandlesFromDirectory(csvDirectoryHandle);
+      dismissLockBanner();
+      updateCsvStatusUI();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+      }
+    }
+  }
+
   async function linkCsvFile() {
     if (!window.showSaveFilePicker) {
       alert("Your browser does not support direct disk file saving. Please use Microsoft Edge or Google Chrome on Windows 11.");
@@ -698,12 +929,42 @@
       const suggested = appData.csvFileName || 'register-transactions.csv';
       csvFileHandle = await window.showSaveFilePicker({
         suggestedName: suggested,
+        startIn: csvFileHandle || csvDirectoryHandle || 'documents',
         types: [{ description: 'CSV Spreadsheet', accept: { 'text/csv': ['.csv'] } }]
       });
+      csvDirectoryHandle = null;
+      csvDirectoryPermissionGranted = false;
+      await saveHandleToDB('csvDirectory', null);
       csvPermissionGranted = true;
       appData.csvFileName = csvFileHandle.name;
       saveData();
-      await saveHandleToDB(csvFileHandle);
+      await saveHandleToDB('csvFile', csvFileHandle);
+      dismissLockBanner();
+      updateCsvStatusUI();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+      }
+    }
+  }
+
+  async function linkCustomersCsvFile() {
+    if (!window.showSaveFilePicker) {
+      alert("Your browser does not support direct disk file saving. Please use Microsoft Edge or Google Chrome on Windows 11.");
+      return;
+    }
+    try {
+      const suggested = appData.customersCsvFileName || 'register-customers.csv';
+      customersCsvFileHandle = await window.showSaveFilePicker({
+        suggestedName: suggested,
+        startIn: csvFileHandle || csvDirectoryHandle || 'documents',
+        types: [{ description: 'CSV Spreadsheet', accept: { 'text/csv': ['.csv'] } }]
+      });
+      customersCsvPermissionGranted = true;
+      appData.customersCsvFileName = customersCsvFileHandle.name;
+      saveData();
+      await saveHandleToDB('customersCsvFile', customersCsvFileHandle);
+      await syncCustomersWithCsv();
       dismissLockBanner();
       updateCsvStatusUI();
     } catch (err) {
@@ -715,39 +976,302 @@
 
   function updateCsvStatusUI() {
     const pill = document.getElementById('csv-status-btn');
+    const custPill = document.getElementById('customers-csv-status-btn');
     const histStatus = document.getElementById('history-csv-status');
+    const custStatus = document.getElementById('customers-csv-status');
+    const custCountEl = document.getElementById('customers-count-status');
     const hint = document.getElementById('saved-csv-hint');
 
-    if (csvFileHandle && csvPermissionGranted) {
+    if (csvDirectoryHandle && csvDirectoryPermissionGranted && csvFileHandle && customersCsvFileHandle) {
       pill.className = 'csv-pill linked';
-      pill.innerText = `● Auto-CSV: ${csvFileHandle.name}`;
+      pill.innerText = `● Auto-CSV: Folder (${csvFileHandle.name} & ${customersCsvFileHandle.name})`;
+      custPill.style.display = 'none';
+    } else if (csvDirectoryHandle && !csvDirectoryPermissionGranted) {
+      pill.className = 'csv-pill needs-perm';
+      pill.innerText = `● Auto-CSV: Click to Unlock Folder (${csvDirectoryHandle.name})`;
+      custPill.style.display = 'none';
+    } else {
+      custPill.style.display = 'inline-flex';
+      if (csvFileHandle && csvPermissionGranted) {
+        pill.className = 'csv-pill linked';
+        pill.innerText = `● History CSV: ${csvFileHandle.name}`;
+      } else if (csvFileHandle && !csvPermissionGranted) {
+        pill.className = 'csv-pill needs-perm';
+        pill.innerText = `● History CSV: Click to Unlock (${csvFileHandle.name})`;
+      } else {
+        pill.className = 'csv-pill';
+        pill.innerText = '● History CSV: Not Linked';
+      }
+
+      if (customersCsvFileHandle && customersCsvPermissionGranted) {
+        custPill.className = 'csv-pill linked';
+        custPill.innerText = `● Customers CSV: ${customersCsvFileHandle.name}`;
+      } else if (customersCsvFileHandle && !customersCsvPermissionGranted) {
+        custPill.className = 'csv-pill needs-perm';
+        custPill.innerText = `● Customers CSV: Click to Unlock (${customersCsvFileHandle.name})`;
+      } else {
+        custPill.className = 'csv-pill';
+        custPill.innerText = '● Customers CSV: Not Linked';
+      }
+    }
+
+    if (csvFileHandle && csvPermissionGranted) {
       histStatus.innerText = `Active & Linked (${csvFileHandle.name})`;
       histStatus.style.color = 'var(--green)';
-    } else if (csvFileHandle && !csvPermissionGranted) {
-      pill.className = 'csv-pill needs-perm';
-      pill.innerText = `● Auto-CSV: Click to Unlock (${csvFileHandle.name})`;
-      histStatus.innerText = `Remembered (${csvFileHandle.name}) — Click the amber badge at top to unlock`;
+    } else if ((csvDirectoryHandle && !csvDirectoryPermissionGranted) || (csvFileHandle && !csvPermissionGranted)) {
+      const targetName = (csvFileHandle && csvFileHandle.name) || appData.csvFileName || 'History CSV';
+      histStatus.innerText = `Remembered (${targetName}) — Click the amber badge at top to unlock`;
       histStatus.style.color = 'var(--amber)';
     } else {
-      pill.className = 'csv-pill';
-      pill.innerText = '● Auto-CSV: Not Linked';
       histStatus.innerText = appData.csvFileName
-        ? `Not linked yet (Last configured file: ${appData.csvFileName})`
-        : 'Not linked (click "Set Auto-Save CSV File" to enable)';
+        ? `Not linked yet (Last file: ${appData.csvFileName})`
+        : 'Not linked';
       histStatus.style.color = 'var(--muted)';
     }
 
-    hint.innerText = appData.csvFileName ? `Configured CSV filename: ${appData.csvFileName}` : '';
+    if (customersCsvFileHandle && customersCsvPermissionGranted) {
+      custStatus.innerText = `Active & Linked (${customersCsvFileHandle.name})`;
+      custStatus.style.color = 'var(--green)';
+    } else if ((csvDirectoryHandle && !csvDirectoryPermissionGranted) || (customersCsvFileHandle && !customersCsvPermissionGranted)) {
+      const targetName = (customersCsvFileHandle && customersCsvFileHandle.name) || appData.customersCsvFileName || 'Customers CSV';
+      custStatus.innerText = `Remembered (${targetName}) — Click the amber badge at top to unlock`;
+      custStatus.style.color = 'var(--amber)';
+    } else {
+      custStatus.innerText = appData.customersCsvFileName
+        ? `Not linked yet (Last file: ${appData.customersCsvFileName})`
+        : 'Not linked';
+      custStatus.style.color = 'var(--muted)';
+    }
+
+    if (custCountEl) {
+      const count = appData.customers.length;
+      custCountEl.innerText = `${count} saved customer${count === 1 ? '' : 's'}`;
+    }
+
+    const hints = [];
+    if (appData.csvFileName) hints.push(`History CSV: ${appData.csvFileName}`);
+    if (appData.customersCsvFileName) hints.push(`Customers CSV: ${appData.customersCsvFileName}`);
+    hint.innerText = hints.join('  |  ');
   }
 
   const CSV_HEADER = "Date,Customer Name,Phone,Email,Address,Items,Subtotal,Discount,Tax,Total,Tendered,Change,Tender Type\n";
+  const CUSTOMERS_CSV_HEADER = "Customer Name,Phone,Email,Address,Last Sale\n";
+
+  function csvEscape(val) {
+    return `"${String(val || '').replace(/"/g, '""')}"`;
+  }
+
+  function parseCsvText(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') {
+            field += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          row.push(field);
+          field = '';
+        } else if (ch === '\r') {
+          if (text[i + 1] === '\n') i++;
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = '';
+        } else if (ch === '\n') {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = '';
+        } else {
+          field += ch;
+        }
+      }
+    }
+    if (field.length > 0 || row.length > 0) {
+      row.push(field);
+      rows.push(row);
+    }
+    return rows;
+  }
 
   function buildCsvRow(tx) {
     const c = tx.customer || {};
     const itemsStr = tx.items.map(i => `${i.qty > 1 ? i.qty + 'x ' : ''}${i.name} ($${(i.price * i.qty).toFixed(2)})`).join(' | ');
-    const esc = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
     const tenderType = tx.tenderType || 'Cash';
-    return `${esc(tx.date)},${esc(c.name)},${esc(c.phone)},${esc(c.email)},${esc(c.address)},${esc(itemsStr)},${tx.subtotal.toFixed(2)},${(tx.discountAmount || 0).toFixed(2)},${tx.tax.toFixed(2)},${tx.total.toFixed(2)},${tx.tendered.toFixed(2)},${tx.change.toFixed(2)},${esc(tenderType)}\n`;
+    return `${csvEscape(tx.date)},${csvEscape(c.name)},${csvEscape(c.phone)},${csvEscape(c.email)},${csvEscape(c.address)},${csvEscape(itemsStr)},${tx.subtotal.toFixed(2)},${(tx.discountAmount || 0).toFixed(2)},${tx.tax.toFixed(2)},${tx.total.toFixed(2)},${tx.tendered.toFixed(2)},${tx.change.toFixed(2)},${csvEscape(tenderType)}\n`;
+  }
+
+  function buildCustomerCsvRow(c) {
+    return `${csvEscape(c.name)},${csvEscape(c.phone)},${csvEscape(c.email)},${csvEscape(c.address)},${csvEscape(c.lastSale)}\n`;
+  }
+
+  function normalizePhoneDigits(phone) {
+    return String(phone || '').replace(/\D/g, '');
+  }
+
+  function upsertCustomer(cust, saleDate, preferExistingFields) {
+    if (!cust) return false;
+    const name = String(cust.name || '').trim();
+    const phone = String(cust.phone || '').trim();
+    const email = String(cust.email || '').trim();
+    const address = String(cust.address || '').trim();
+    if (!name && !phone && !email && !address) return false;
+
+    const normEmail = email.toLowerCase();
+    const normPhone = normalizePhoneDigits(phone);
+    const normName = name.toLowerCase();
+
+    const existing = appData.customers.find(c => {
+      if (normEmail && String(c.email || '').trim().toLowerCase() === normEmail) return true;
+      if (normPhone.length >= 7 && normalizePhoneDigits(c.phone) === normPhone) return true;
+      if (normName && String(c.name || '').trim().toLowerCase() === normName) {
+        const cPhone = normalizePhoneDigits(c.phone);
+        const cAddr = String(c.address || '').trim().toLowerCase();
+        const addrNorm = address.toLowerCase();
+        const phoneCompatible = !normPhone || !cPhone || normPhone === cPhone;
+        const addrCompatible = !addrNorm || !cAddr || addrNorm === cAddr;
+        return phoneCompatible && addrCompatible;
+      }
+      return false;
+    });
+
+    if (existing) {
+      if (preferExistingFields) {
+        if (!existing.name && name) existing.name = name;
+        if (!existing.phone && phone) existing.phone = phone;
+        if (!existing.email && email) existing.email = email;
+        if (!existing.address && address) existing.address = address;
+        if (!existing.lastSale && saleDate) existing.lastSale = saleDate;
+      } else {
+        if (name) existing.name = name;
+        if (phone) existing.phone = phone;
+        if (email) existing.email = email;
+        if (address) existing.address = address;
+        if (saleDate) existing.lastSale = saleDate;
+      }
+      return true;
+    }
+
+    appData.customers.unshift({
+      name,
+      phone,
+      email,
+      address,
+      lastSale: saleDate || new Date().toLocaleString()
+    });
+    return true;
+  }
+
+  function seedCustomersFromHistory() {
+    if (!Array.isArray(appData.history) || appData.history.length === 0) return;
+    let changed = false;
+    for (let i = appData.history.length - 1; i >= 0; i--) {
+      const tx = appData.history[i];
+      if (tx && tx.customer) {
+        if (upsertCustomer(tx.customer, tx.date, true)) changed = true;
+      }
+    }
+    if (changed) saveData();
+  }
+
+  async function syncCustomersWithCsv() {
+    if (!customersCsvFileHandle) return;
+    try {
+      if (!customersCsvPermissionGranted) {
+        const perm = await customersCsvFileHandle.requestPermission({ mode: 'readwrite' });
+        customersCsvPermissionGranted = (perm === 'granted');
+        if (!customersCsvPermissionGranted) {
+          updateCsvStatusUI();
+          return;
+        }
+      }
+
+      const file = await customersCsvFileHandle.getFile();
+      const existingText = await file.text();
+      let diskCount = 0;
+
+      if (existingText && existingText.trim().length > 0) {
+        const rows = parseCsvText(existingText);
+        if (rows.length > 0) {
+          const firstRowJoined = rows[0].join(',').toLowerCase();
+          const startIdx = firstRowJoined.includes('name') && (firstRowJoined.includes('phone') || firstRowJoined.includes('email')) ? 1 : 0;
+          for (let i = startIdx; i < rows.length; i++) {
+            const r = rows[i];
+            if (!r || r.every(cell => !String(cell || '').trim())) continue;
+            diskCount++;
+            upsertCustomer({
+              name: r[0] || '',
+              phone: r[1] || '',
+              email: r[2] || '',
+              address: r[3] || ''
+            }, r[4] || '', true);
+          }
+          saveData();
+        }
+      }
+
+      if (appData.customers.length > 0 || diskCount === 0) {
+        await writeCustomersToCSV();
+      }
+      updateCsvStatusUI();
+    } catch (err) {
+      console.error("Customers CSV sync failed:", err);
+      handleCsvWriteError(err, customersCsvFileHandle, 'customers');
+    }
+  }
+
+  async function writeCustomersToCSV() {
+    if (!customersCsvFileHandle) return;
+    try {
+      if (!customersCsvPermissionGranted) {
+        const perm = await customersCsvFileHandle.requestPermission({ mode: 'readwrite' });
+        customersCsvPermissionGranted = (perm === 'granted');
+        updateCsvStatusUI();
+        if (!customersCsvPermissionGranted) return;
+      }
+
+      let csv = CUSTOMERS_CSV_HEADER;
+      appData.customers.forEach(c => {
+        csv += buildCustomerCsvRow(c);
+      });
+
+      const writable = await customersCsvFileHandle.createWritable();
+      await writable.write(csv);
+      await writable.close();
+      dismissLockBanner();
+      updateCsvStatusUI();
+    } catch (err) {
+      console.error("Customers CSV write failed:", err);
+      handleCsvWriteError(err, customersCsvFileHandle, 'customers');
+    }
+  }
+
+  function handleCsvWriteError(err, handle, kind) {
+    const banner = document.getElementById('lock-banner');
+    const bannerText = document.getElementById('lock-banner-text');
+    if (err.name === 'NotAllowedError') {
+      if (kind === 'customers') customersCsvPermissionGranted = false;
+      else csvPermissionGranted = false;
+      if (csvDirectoryHandle) csvDirectoryPermissionGranted = false;
+      updateCsvStatusUI();
+    } else {
+      bannerText.innerText = `Warning: Could not write to "${handle ? handle.name : 'CSV file'}" because it is locked by another program (e.g., LibreOffice Calc or Excel). Close it to resume auto-saving!`;
+      banner.classList.add('active');
+    }
   }
 
   async function appendTransactionToCSV(tx) {
@@ -774,15 +1298,7 @@
       dismissLockBanner();
     } catch (err) {
       console.error("Auto-CSV write failed:", err);
-      const banner = document.getElementById('lock-banner');
-      const bannerText = document.getElementById('lock-banner-text');
-      if (err.name === 'NotAllowedError') {
-        csvPermissionGranted = false;
-        updateCsvStatusUI();
-      } else {
-        bannerText.innerText = `Warning: Could not write to "${csvFileHandle.name}" because it is locked by another program (e.g., LibreOffice Calc or Excel). Close it to resume auto-saving!`;
-        banner.classList.add('active');
-      }
+      handleCsvWriteError(err, csvFileHandle, 'history');
     }
   }
 
@@ -820,6 +1336,7 @@
 
   async function init() {
     applyTheme(appData.theme || 'dark');
+    seedCustomersFromHistory();
     document.getElementById('header-shop-name').innerText = appData.shopName;
     document.getElementById('set-shop-name').value = appData.shopName;
     document.getElementById('set-tax-rate').value = appData.taxRate;
@@ -832,7 +1349,7 @@
     renderTicket();
     renderSettingsItems();
     renderHistory();
-    await restoreSavedCsvHandle();
+    await restoreSavedCsvHandles();
   }
 
   function switchTab(tab) {
@@ -844,18 +1361,22 @@
     document.getElementById('tab-' + tab).classList.add('active');
   }
 
-  // --- Customer Panel Helpers ---
+  // --- Customer Panel Helpers & Autofill ---
   function toggleCustomerPanel() {
     const panel = document.getElementById('cust-panel');
     const arrow = document.getElementById('cust-arrow');
     const isOpen = panel.classList.toggle('open');
     arrow.innerText = isOpen ? '▲' : '▼';
+    if (!isOpen) hideCustomerSuggestions();
   }
 
   function updateCustLabel() {
     const name = document.getElementById('cust-name').value.trim();
-    document.getElementById('cust-toggle-label').innerText = name
-      ? `Customer: ${name}`
+    const phone = document.getElementById('cust-phone').value.trim();
+    const email = document.getElementById('cust-email').value.trim();
+    const display = name || phone || email;
+    document.getElementById('cust-toggle-label').innerText = display
+      ? `Customer: ${display}`
       : '+ Add Customer Info (Optional)';
   }
 
@@ -875,7 +1396,119 @@
     document.getElementById('cust-email').value = '';
     document.getElementById('cust-address').value = '';
     document.getElementById('cust-print-check').checked = appData.printCustomerDefault !== false;
+    hideCustomerSuggestions();
     updateCustLabel();
+  }
+
+  function getMatchingCustomers(query, fieldId) {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q || !Array.isArray(appData.customers) || appData.customers.length === 0) return [];
+    const qDigits = normalizePhoneDigits(q);
+
+    return appData.customers.filter(c => {
+      const name = String(c.name || '').toLowerCase();
+      const phone = String(c.phone || '').toLowerCase();
+      const phoneDigits = normalizePhoneDigits(c.phone);
+      const email = String(c.email || '').toLowerCase();
+      const address = String(c.address || '').toLowerCase();
+
+      if (fieldId === 'cust-name') return name.includes(q);
+      if (fieldId === 'cust-phone') return phone.includes(q) || (qDigits.length >= 2 && phoneDigits.includes(qDigits));
+      if (fieldId === 'cust-email') return email.includes(q);
+      if (fieldId === 'cust-address') return address.includes(q);
+      return name.includes(q) || phone.includes(q) || email.includes(q) || address.includes(q);
+    }).slice(0, 8);
+  }
+
+  function renderCustomerSuggestions(matches) {
+    const box = document.getElementById('cust-suggestions');
+    activeCustSuggestions = matches;
+    activeCustSuggestionIndex = matches.length > 0 ? 0 : -1;
+
+    if (!matches.length) {
+      box.classList.remove('open');
+      box.innerHTML = '';
+      return;
+    }
+
+    box.innerHTML = matches.map((c, idx) => {
+      const details = [c.phone, c.email, c.address].filter(Boolean).join(' • ');
+      const title = c.name || c.phone || c.email || c.address;
+      return `
+        <div class="cust-suggestion-item${idx === activeCustSuggestionIndex ? ' active' : ''}" onmousedown="event.preventDefault(); selectCustomerSuggestion(${idx})">
+          <strong>${escapeHtml(title)}</strong>
+          ${details ? `<span>${escapeHtml(details)}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+    box.classList.add('open');
+  }
+
+  function onCustomerFieldInput(inputEl) {
+    updateCustLabel();
+    clearTimeout(hideCustSuggestionsTimer);
+    const matches = getMatchingCustomers(inputEl.value, inputEl.id);
+    renderCustomerSuggestions(matches);
+  }
+
+  function onCustomerFieldFocus(inputEl) {
+    clearTimeout(hideCustSuggestionsTimer);
+    if (inputEl.value.trim()) {
+      const matches = getMatchingCustomers(inputEl.value, inputEl.id);
+      renderCustomerSuggestions(matches);
+    }
+  }
+
+  function onCustomerFieldKeydown(event) {
+    const box = document.getElementById('cust-suggestions');
+    if (!box.classList.contains('open') || activeCustSuggestions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      activeCustSuggestionIndex = (activeCustSuggestionIndex + 1) % activeCustSuggestions.length;
+      updateSuggestionHighlight();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeCustSuggestionIndex = (activeCustSuggestionIndex - 1 + activeCustSuggestions.length) % activeCustSuggestions.length;
+      updateSuggestionHighlight();
+    } else if (event.key === 'Enter' && activeCustSuggestionIndex >= 0) {
+      event.preventDefault();
+      selectCustomerSuggestion(activeCustSuggestionIndex);
+    } else if (event.key === 'Escape') {
+      hideCustomerSuggestions();
+    }
+  }
+
+  function updateSuggestionHighlight() {
+    const items = document.querySelectorAll('#cust-suggestions .cust-suggestion-item');
+    items.forEach((el, idx) => {
+      el.classList.toggle('active', idx === activeCustSuggestionIndex);
+    });
+  }
+
+  function selectCustomerSuggestion(index) {
+    const c = activeCustSuggestions[index];
+    if (!c) return;
+    document.getElementById('cust-name').value = c.name || '';
+    document.getElementById('cust-phone').value = c.phone || '';
+    document.getElementById('cust-email').value = c.email || '';
+    document.getElementById('cust-address').value = c.address || '';
+    updateCustLabel();
+    hideCustomerSuggestions();
+  }
+
+  function scheduleHideCustomerSuggestions() {
+    hideCustSuggestionsTimer = setTimeout(hideCustomerSuggestions, 150);
+  }
+
+  function hideCustomerSuggestions() {
+    const box = document.getElementById('cust-suggestions');
+    if (box) {
+      box.classList.remove('open');
+      box.innerHTML = '';
+    }
+    activeCustSuggestions = [];
+    activeCustSuggestionIndex = -1;
   }
 
   // --- Register Items & Quantities ---
@@ -1104,12 +1737,19 @@
     };
 
     appData.history.unshift(tx);
+    if (customer && customer.hasData) {
+      upsertCustomer(customer, tx.date, false);
+    }
     historyCurrentPage = 1;
     saveData();
     renderHistory();
+    updateCsvStatusUI();
 
-    // Auto-write to linked CSV file ONLY on new completed sales
+    // Auto-write to linked CSV files ONLY on new completed sales
     await appendTransactionToCSV(tx);
+    if (customer && customer.hasData) {
+      await writeCustomersToCSV();
+    }
 
     closeModal('checkout-modal');
     clearTicket();
@@ -1248,6 +1888,52 @@
     renderSettingsItems();
   }
 
+  function moveItem(fromIndex, toIndex) {
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 || fromIndex >= appData.items.length ||
+      toIndex < 0 || toIndex >= appData.items.length
+    ) return;
+    const [moved] = appData.items.splice(fromIndex, 1);
+    appData.items.splice(toIndex, 0, moved);
+    saveData();
+    renderItemsGrid();
+    renderSettingsItems();
+  }
+
+  function handleItemDragStart(event, index) {
+    draggedItemIndex = index;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    event.currentTarget.classList.add('dragging');
+  }
+
+  function handleItemDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    event.currentTarget.classList.add('drag-over');
+  }
+
+  function handleItemDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleItemDrop(event, targetIndex) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (draggedItemIndex !== null && draggedItemIndex !== targetIndex) {
+      moveItem(draggedItemIndex, targetIndex);
+    }
+    draggedItemIndex = null;
+  }
+
+  function handleItemDragEnd(event) {
+    draggedItemIndex = null;
+    document.querySelectorAll('.settings-item-row').forEach(el => {
+      el.classList.remove('dragging', 'drag-over');
+    });
+  }
+
   function renderSettingsItems() {
     const list = document.getElementById('settings-items-list');
     list.innerHTML = appData.items.map((item, idx) => {
@@ -1256,9 +1942,22 @@
       else if (item.type === 'disc_fixed') badge = '-$' + item.price.toFixed(2) + ' Discount';
       else if (item.type === 'disc_pct') badge = '-' + item.price + '% Discount';
       return `
-        <div class="ticket-row" style="margin-bottom:8px;">
-          <span><strong>${escapeHtml(item.name)}</strong> (${escapeHtml(badge)})</span>
-          <button class="btn-danger" onclick="deleteItem(${idx})">Remove</button>
+        <div class="ticket-row settings-item-row" style="margin-bottom:8px;"
+          draggable="true"
+          ondragstart="handleItemDragStart(event, ${idx})"
+          ondragover="handleItemDragOver(event)"
+          ondragleave="handleItemDragLeave(event)"
+          ondrop="handleItemDrop(event, ${idx})"
+          ondragend="handleItemDragEnd(event)">
+          <div class="settings-item-left">
+            <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
+            <span><strong>${escapeHtml(item.name)}</strong> (${escapeHtml(badge)})</span>
+          </div>
+          <div class="settings-item-actions">
+            <button class="order-btn" onclick="moveItem(${idx}, ${idx - 1})" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
+            <button class="order-btn" onclick="moveItem(${idx}, ${idx + 1})" ${idx === appData.items.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
+            <button class="btn-danger" onclick="deleteItem(${idx})">Remove</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -1271,6 +1970,7 @@
       theme: appData.theme,
       printCustomerDefault: appData.printCustomerDefault,
       csvFileName: appData.csvFileName,
+      customersCsvFileName: appData.customersCsvFileName,
       receiptTop: appData.receiptTop,
       receiptBottom: appData.receiptBottom,
       items: appData.items
@@ -1294,6 +1994,7 @@
         if (imported.theme !== undefined) appData.theme = imported.theme;
         if (imported.printCustomerDefault !== undefined) appData.printCustomerDefault = imported.printCustomerDefault;
         if (imported.csvFileName !== undefined) appData.csvFileName = imported.csvFileName;
+        if (imported.customersCsvFileName !== undefined) appData.customersCsvFileName = imported.customersCsvFileName;
         if (imported.receiptTop !== undefined) appData.receiptTop = imported.receiptTop;
         if (imported.receiptBottom !== undefined) appData.receiptBottom = imported.receiptBottom;
         if (Array.isArray(imported.items)) appData.items = imported.items;
@@ -1302,7 +2003,7 @@
         init();
         let msg = "Settings restored successfully!";
         if (appData.csvFileName && !csvFileHandle) {
-          msg += `\n\nNote: Your backup references the CSV file "${appData.csvFileName}". Click "Set Auto-Save CSV File" to link it on this computer.`;
+          msg += `\n\nNote: Your backup references the CSV file "${appData.csvFileName}". Click "Set Auto-Save Folder" or "Set History CSV" to link it on this computer.`;
         }
         alert(msg);
       } catch (err) {
@@ -1358,9 +2059,12 @@
           const c = tx.customer || {};
           const nameMatch = (c.name || '').toLowerCase().includes(q);
           const emailMatch = (c.email || '').toLowerCase().includes(q);
+          const addrMatch = (c.address || '').toLowerCase().includes(q);
           const phoneRaw = (c.phone || '').toLowerCase();
           const phoneMatch = phoneRaw.includes(q) || (qDigits.length >= 3 && phoneRaw.replace(/\D/g, '').includes(qDigits));
-          return nameMatch || emailMatch || phoneMatch;
+          const itemsMatch = (tx.items || []).some(i => (i.name || '').toLowerCase().includes(q));
+          const tenderMatch = (tx.tenderType || 'Cash').toLowerCase().includes(q);
+          return nameMatch || emailMatch || addrMatch || phoneMatch || itemsMatch || tenderMatch;
         })
       : indexedHistory;
 
@@ -1378,34 +2082,76 @@
     const startIdx = (historyCurrentPage - 1) * HISTORY_PAGE_SIZE;
     const pageSlice = filtered.slice(startIdx, startIdx + HISTORY_PAGE_SIZE);
 
-    list.innerHTML = pageSlice.map(({ tx, origIdx }) => {
+    const dash = '<span class="muted-dash">&mdash;</span>';
+    const rowsHtml = pageSlice.map(({ tx, origIdx }) => {
       const c = tx.customer || {};
-      const custParts = [];
-      if (c.name) custParts.push(c.name);
-      if (c.phone) custParts.push(c.phone);
-      if (c.email) custParts.push(c.email);
-      const custTag = custParts.length
-        ? ` <span style="color:var(--accent);">[${escapeHtml(custParts.join(' • '))}]</span>`
-        : '';
-
       const tenderType = tx.tenderType || 'Cash';
       const tenderClass = tenderType === 'Check' ? 'tender-check' : (tenderType === 'Card' ? 'tender-card' : 'tender-cash');
       const tenderBadge = `<span class="tender-badge ${tenderClass}">${escapeHtml(tenderType)}</span>`;
 
-      const itemsSummary = tx.items.map(i => `${(i.qty && i.qty > 1) ? i.qty + 'x ' : ''}${escapeHtml(i.name)}`).join(', ');
+      const itemsSummary = (tx.items || []).map(i => {
+        const qtyPrefix = (i.qty && i.qty > 1) ? `${i.qty}x ` : '';
+        const linePrice = ((i.price || 0) * (i.qty || 1)).toFixed(2);
+        return `${qtyPrefix}${escapeHtml(i.name)} ($${linePrice})`;
+      }).join('<br>');
+
+      const discAmt = Number(tx.discountAmount || 0);
+      const discCell = discAmt > 0
+        ? `-$${discAmt.toFixed(2)}${tx.discountLabel ? `<br><small style="color:var(--muted);">${escapeHtml(tx.discountLabel)}</small>` : ''}`
+        : dash;
+
       return `
-        <div class="ticket-row" style="margin-bottom:8px;">
-          <div style="flex:1; min-width:0;">
-            <strong>${escapeHtml(tx.date)}</strong>${tenderBadge}${custTag} &mdash; ${itemsSummary}
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <strong>$${tx.total.toFixed(2)}</strong>
-            <button class="btn-primary" style="padding:5px 10px; font-size:0.82rem;" onclick="showReceiptModal(appData.history[${origIdx}], false, false)">View Receipt</button>
-            <button class="btn-primary" style="padding:5px 10px; font-size:0.82rem;" onclick="showReceiptModal(appData.history[${origIdx}], true, false)">Reprint</button>
-          </div>
-        </div>
+        <tr>
+          <td class="nowrap">${escapeHtml(tx.date)}</td>
+          <td>${c.name ? escapeHtml(c.name) : dash}</td>
+          <td class="nowrap">${c.phone ? escapeHtml(c.phone) : dash}</td>
+          <td>${c.email ? escapeHtml(c.email) : dash}</td>
+          <td class="addr-col">${c.address ? escapeHtml(c.address) : dash}</td>
+          <td class="items-col">${itemsSummary || dash}</td>
+          <td class="num">$${Number(tx.subtotal || 0).toFixed(2)}</td>
+          <td class="num" style="color:${discAmt > 0 ? 'var(--green)' : 'inherit'};">${discCell}</td>
+          <td class="num">$${Number(tx.tax || 0).toFixed(2)}</td>
+          <td class="num"><strong>$${Number(tx.total || 0).toFixed(2)}</strong></td>
+          <td class="nowrap">${tenderBadge}</td>
+          <td class="num">$${Number(tx.tendered || 0).toFixed(2)}</td>
+          <td class="num">$${Number(tx.change || 0).toFixed(2)}</td>
+          <td>
+            <div class="history-actions-cell">
+              <button class="btn-primary" style="padding:4px 9px; font-size:0.78rem;" onclick="showReceiptModal(appData.history[${origIdx}], false, false)">View</button>
+              <button class="btn-primary" style="padding:4px 9px; font-size:0.78rem;" onclick="showReceiptModal(appData.history[${origIdx}], true, false)">Reprint</button>
+            </div>
+          </td>
+        </tr>
       `;
     }).join('');
+
+    list.innerHTML = `
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Customer Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Address</th>
+              <th>Items</th>
+              <th class="num">Subtotal</th>
+              <th class="num">Discount</th>
+              <th class="num">Tax</th>
+              <th class="num">Total</th>
+              <th>Tender</th>
+              <th class="num">Tendered</th>
+              <th class="num">Change</th>
+              <th>Receipt</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
 
     const showingFrom = startIdx + 1;
     const showingTo = startIdx + pageSlice.length;
@@ -1435,6 +2181,19 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = appData.csvFileName || `register-history-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  function exportCustomersCSV() {
+    if (appData.customers.length === 0) return;
+    let csv = CUSTOMERS_CSV_HEADER;
+    appData.customers.forEach(c => {
+      csv += buildCustomerCsvRow(c);
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = appData.customersCsvFileName || `register-customers-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
   }
 
