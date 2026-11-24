@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="./manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Cash Register</title>
+<style>
+  :root {
+    --bg: #12151a;
+    --panel: #1b2028;
+    --border: #2c3440;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #2f81f7;
+    --accent-hover: #1f6feb;
+    --green: #238636;
+    --green-hover: #2ea043;
+    --red: #da3633;
+    --amber: #d29922;
+    --item-hover: #222832;
+  }
+
+  body.light-mode {
+    --bg: #f3f4f6;
+    --panel: #ffffff;
+    --border: #d1d5db;
+    --text: #111827;
+    --muted: #4b5563;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --green: #16a34a;
+    --green-hover: #15803d;
+    --red: #dc2626;
+    --amber: #d97706;
+    --item-hover: #e5e7eb;
+  }
+
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background 0.15s, color 0.15s; }
+
+  /* Lock Warning Banner */
+  #lock-banner {
+    display: none;
+    background: var(--red);
+    color: #fff;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #lock-banner.active { display: flex; }
+  #lock-banner button {
+    background: rgba(255,255,255,0.2); border: 1px solid #fff; color: #fff;
+    padding: 3px 10px; border-radius: 4px; cursor: pointer; font-weight: 600;
+  }
+
+  /* Navigation Header */
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  header h1 { margin: 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px; }
+
+  /* CSV Status Pill */
+  .csv-pill {
+    font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .csv-pill.linked { border-color: var(--green); color: var(--green); }
+  .csv-pill.needs-perm { border-color: var(--amber); color: var(--amber); }
+
+  .nav-tabs { display: flex; gap: 8px; align-items: center; }
+  .tab-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+    padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Main Views */
+  .view { display: none; flex: 1; overflow: hidden; }
+  .view.active { display: flex; }
+
+  /* Register Layout */
+  #register-view { flex-direction: row; }
+  .items-panel { flex: 2; padding: 20px; overflow-y: auto; border-right: 1px solid var(--border); }
+  .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 14px; }
+  .item-btn {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 18px 14px; border-radius: 8px; cursor: pointer; text-align: center;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    min-height: 105px; transition: 0.15s;
+  }
+  .item-btn:hover { border-color: var(--accent); background: var(--item-hover); }
+  .item-btn .name { font-size: 1.02rem; font-weight: 600; margin-bottom: 6px; }
+  .item-btn .price { font-size: 0.92rem; color: var(--muted); }
+  .item-btn.manual .price { color: var(--amber); font-weight: 600; }
+  .item-btn.discount-btn { border-style: dashed; }
+  .item-btn.discount-btn .price { color: var(--green); font-weight: 600; }
+
+  /* Ticket / Cart Panel */
+  .ticket-panel { flex: 1; min-width: 390px; max-width: 470px; background: var(--panel); display: flex; flex-direction: column; padding: 18px; }
+  .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
+
+  /* Collapsible Customer Section */
+  .cust-toggle {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%;
+  }
+  .cust-panel {
+    display: none; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px; margin-bottom: 10px; flex-direction: column; gap: 7px;
+  }
+  .cust-panel.open { display: flex; }
+  .cust-panel input[type="text"], .cust-panel input[type="email"], .cust-panel input[type="tel"] {
+    padding: 7px 9px; font-size: 0.85rem; width: 100%;
+  }
+  .cust-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .cust-check { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
+
+  .ticket-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; }
+  .ticket-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); gap: 8px;
+  }
+  .ticket-row-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .ticket-row-info strong { font-size: 0.93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ticket-row-info small { color: var(--muted); font-size: 0.78rem; }
+
+  /* Quantity Stepper */
+  .qty-controls { display: flex; align-items: center; gap: 5px; }
+  .qty-btn {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-weight: bold;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .qty-btn:hover { border-color: var(--accent); }
+  .qty-val { min-width: 20px; text-align: center; font-size: 0.9rem; font-weight: 600; }
+
+  .ticket-row-actions { display: flex; align-items: center; gap: 8px; }
+  .del-btn { background: transparent; border: none; color: var(--red); cursor: pointer; font-size: 1.15rem; font-weight: bold; padding: 0 4px; }
+
+  /* Discount Strip */
+  .discount-strip {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .btn-disc-open {
+    background: transparent; border: 1px dashed var(--accent); color: var(--accent);
+    padding: 5px 10px; border-radius: 5px; font-size: 0.85rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-disc-open:hover { background: rgba(47, 129, 247, 0.1); }
+  .disc-active-badge {
+    display: inline-flex; align-items: center; gap: 6px; background: rgba(35, 134, 54, 0.15);
+    border: 1px solid var(--green); color: var(--green); padding: 4px 8px; border-radius: 5px; font-size: 0.82rem; font-weight: 600;
+  }
+  .disc-active-badge button { background: transparent; border: none; color: var(--red); cursor: pointer; font-weight: bold; padding: 0 2px; }
+
+  .totals-box { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 8px; }
+  .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; color: var(--muted); }
+  .total-line.disc-line { color: var(--green); }
+  .total-line.grand { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+
+  .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .btn { padding: 12px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; color: #fff; }
+  .btn-clear { background: #4b5563; }
+  .btn-clear:hover { background: #374151; }
+  .btn-checkout { background: var(--green); grid-column: span 2; font-size: 1.1rem; }
+  .btn-checkout:hover { background: var(--green-hover); }
+
+  /* Settings & History Views */
+  .container-scroll { flex: 1; padding: 25px; overflow-y: auto; max-width: 920px; margin: 0 auto; width: 100%; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  input, textarea, select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 10px; border-radius: 6px; font-size: 0.92rem;
+  }
+  input[type="text"], textarea { flex: 1; }
+  .btn-primary { background: var(--accent); padding: 9px 15px; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-danger { background: var(--red); padding: 6px 12px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-size: 0.85rem; }
+
+  /* Tender Type Buttons */
+  .tender-type-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 8px 0 14px 0;
+  }
+  .tender-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: 0.15s;
+  }
+  .tender-btn:hover { border-color: var(--accent); }
+  .tender-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* History Search, Badges & Pagination */
+  .history-search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .history-search-row input {
+    flex: 1;
+  }
+  .tender-badge {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+  }
+  .tender-cash { background: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(35, 134, 54, 0.5); }
+  .tender-check { background: rgba(210, 153, 34, 0.2); color: #e3b341; border: 1px solid rgba(210, 153, 34, 0.5); }
+  .tender-card { background: rgba(47, 129, 247, 0.2); color: #58a6ff; border: 1px solid rgba(47, 129, 247, 0.5); }
+  body.light-mode .tender-cash { color: #15803d; }
+  body.light-mode .tender-check { color: #b45309; }
+  body.light-mode .tender-card { color: #1d4ed8; }
+
+  .pagination-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.86rem;
+    color: var(--muted);
+  }
+  .pagination-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .page-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Modals */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    justify-content: center; align-items: center; z-index: 100;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border); padding: 24px; border-radius: 10px; width: 400px; max-width: 92%; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin-top: 0; }
+  .modal input[type="number"], .modal input[type="text"] { width: 100%; font-size: 1.1rem; margin: 8px 0; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+
+  /* On-Screen Receipt Paper Styling */
+  .receipt-paper {
+    background: #ffffff;
+    color: #000000;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    padding: 18px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    margin: 10px auto;
+    max-width: 320px;
+  }
+  .r-center { text-align: center; }
+  .r-left { text-align: left; }
+  .r-line { border-top: 1px dashed #000; margin: 8px 0; }
+  .r-row { display: flex; justify-content: space-between; margin: 4px 0; gap: 8px; }
+  .r-bold { font-weight: bold; }
+
+  /* Hidden Print Receipt Area */
+  #print-area { display: none; }
+
+  /* Print Styles (Works for 80mm Thermal & Standard 8.5x11) */
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      max-width: 300px;
+      color: #000;
+      background: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      padding: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="lock-banner">
+  <span id="lock-banner-text">Warning: CSV file is locked by another program (e.g., LibreOffice Calc or Excel). Close it so transactions can save!</span>
+  <button onclick="dismissLockBanner()">Dismiss</button>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1 id="header-shop-name">Simple Cash Register</h1>
+    <button id="csv-status-btn" class="csv-pill" onclick="handleCsvPillClick()" title="Link or unlock a CSV file on disk for automatic transaction logging">
+      ● Auto-CSV: Not Linked
+    </button>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch Light / Dark Mode">☀️ Light</button>
+    <button class="tab-btn active" id="tab-register" onclick="switchTab('register')">Register</button>
+    <button class="tab-btn" id="tab-history" onclick="switchTab('history')">History</button>
+    <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">Settings</button>
+  </div>
+</header>
+
+<!-- REGISTER VIEW -->
+<div id="register-view" class="view active">
+  <div class="items-panel">
+    <div class="items-grid" id="items-grid"></div>
+  </div>
+
+  <div class="ticket-panel">
+    <div class="ticket-header">
+      <strong>Current Sale</strong>
+      <span id="item-count" style="color:var(--muted); font-size:0.88rem;">0 items</span>
+    </div>
+
+    <!-- Optional Customer Info Drawer -->
+    <button class="cust-toggle" onclick="toggleCustomerPanel()">
+      <span id="cust-toggle-label">+ Add Customer Info (Optional)</span>
+      <span id="cust-arrow">▼</span>
+    </button>
+    <div class="cust-panel" id="cust-panel">
+      <input type="text" id="cust-name" placeholder="Customer Name" oninput="updateCustLabel()">
+      <div class="cust-row-2">
+        <input type="tel" id="cust-phone" placeholder="Phone Number">
+        <input type="email" id="cust-email" placeholder="Email Address">
+      </div>
+      <input type="text" id="cust-address" placeholder="Street Address">
+      <label class="cust-check">
+        <input type="checkbox" id="cust-print-check">
+        Print customer info on this receipt
+      </label>
+    </div>
+
+    <div class="ticket-items" id="ticket-items"></div>
+
+    <!-- Discount Bar -->
+    <div class="discount-strip">
+      <button class="btn-disc-open" onclick="openDiscountModal()">+ Apply Discount</button>
+      <div id="active-discount-display"></div>
+    </div>
+
+    <div class="totals-box">
+      <div class="total-line"><span>Subtotal</span><span id="lbl-subtotal">$0.00</span></div>
+      <div class="total-line disc-line" id="row-discount" style="display:none;">
+        <span id="lbl-discount-name">Discount</span>
+        <span id="lbl-discount">-$0.00</span>
+      </div>
+      <div class="total-line"><span>Tax (<span id="lbl-tax-rate">0</span>%)</span><span id="lbl-tax">$0.00</span></div>
+      <div class="total-line grand"><span>Total</span><span id="lbl-total">$0.00</span></div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn btn-clear" onclick="clearTicket()">Clear Ticket</button>
+      <button class="btn btn-clear" onclick="printCurrentPreview()">Print Quote</button>
+      <button class="btn btn-checkout" onclick="openCheckout()">Complete Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY VIEW -->
+<div id="history-view" class="view">
+  <div class="container-scroll">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+        <h2 style="border:none; margin:0; padding:0;">Transaction History</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="linkCsvFile()">Set Auto-Save CSV File</button>
+          <button class="btn-primary" onclick="exportHistoryCSV()">Manual Export CSV</button>
+          <button class="btn-danger" onclick="clearHistory()">Clear History</button>
+        </div>
+      </div>
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:0;">
+        Auto-Save CSV Status: <strong id="history-csv-status">Not linked</strong>. (Always close the CSV file in Excel or LibreOffice Calc before ringing up a sale so Windows does not lock it.)
+      </p>
+
+      <div class="history-search-row">
+        <input type="text" id="history-search" placeholder="Search by customer name, phone number, or email..." oninput="onHistorySearchInput()">
+        <button class="page-btn" id="history-search-clear" onclick="clearHistorySearch()" style="display:none;">Clear</button>
+      </div>
+
+      <div id="history-list"></div>
+      <div id="history-pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS VIEW -->
+<div id="settings-view" class="view">
+  <div class="container-scroll">
+    <div class="card">
+      <h2>General, Appearance &amp; Tax</h2>
+      <div class="form-row">
+        <label style="width:160px;">Shop / App Title:</label>
+        <input type="text" id="set-shop-name" placeholder="My Shop">
+      </div>
+      <div class="form-row">
+        <label style="width:160px;">Sales Tax (%):</label>
+        <input type="number" id="set-tax-rate" step="0.001" placeholder="0.00">
+      </div>
+      <div class="form-row">
+        <label style="width:160px;">Color Theme:</label>
+        <select id="set-theme" onchange="applyTheme(this.value)">
+          <option value="dark">Dark Mode</option>
+          <option value="light">Light Mode</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="saveGeneralSettings()">Save General Settings</button>
+    </div>
+
+    <div class="card">
+      <h2>Receipt Customization</h2>
+      <div class="form-row">
+        <label style="width:160px;">Top Header:</label>
+        <textarea id="set-receipt-top" rows="3" placeholder="Business Name&#10;Address / Phone&#10;Website"></textarea>
+      </div>
+      <div class="form-row">
+        <label style="width:160px;">Bottom Footer:</label>
+        <textarea id="set-receipt-bottom" rows="3" placeholder="Thank you for your business!&#10;No refunds on labor."></textarea>
+      </div>
+      <div class="form-row">
+        <label style="width:160px;">Customer Info:</label>
+        <label class="cust-check" style="font-size:0.92rem; color:var(--text);">
+          <input type="checkbox" id="set-print-customer">
+          Print customer details on receipts by default (when entered)
+        </label>
+      </div>
+      <button class="btn-primary" onclick="saveGeneralSettings()">Save Receipt Settings</button>
+    </div>
+
+    <div class="card">
+      <h2>Manage Register Buttons</h2>
+      <div class="form-row">
+        <input type="text" id="new-item-name" placeholder="Button Label (e.g., Diagnostic or 10% Off)">
+        <select id="new-item-type" onchange="togglePriceInput()">
+          <option value="fixed">Fixed Price ($)</option>
+          <option value="manual">Manual Price Entry</option>
+          <option value="disc_fixed">Fixed Discount ($)</option>
+          <option value="disc_pct">Percent Discount (%)</option>
+        </select>
+        <input type="number" id="new-item-price" step="0.01" placeholder="Amount / %" style="width:130px;">
+        <button class="btn-primary" onclick="addItem()">Add Button</button>
+      </div>
+      <div id="settings-items-list" style="margin-top:15px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Backup, Restore &amp; Auto-CSV File</h2>
+      <p style="font-size:0.88rem; color:var(--muted); margin-top:0;">
+        Export your shop settings, buttons, tax rate, and target CSV filename to a JSON file to back up or transfer to another computer.
+      </p>
+      <div class="form-row">
+        <button class="btn-primary" onclick="linkCsvFile()">Select Auto-Save CSV File</button>
+        <button class="btn-primary" onclick="exportSettingsJSON()">Export Settings (.json)</button>
+        <button class="btn-primary" onclick="document.getElementById('import-json-input').click()">Import Settings (.json)</button>
+        <input type="file" id="import-json-input" accept=".json" style="display:none;" onchange="importSettingsJSON(event)">
+      </div>
+      <div id="saved-csv-hint" style="font-size:0.85rem; color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Manual Price Modal -->
+<div class="modal-backdrop" id="manual-modal">
+  <div class="modal">
+    <h3 id="manual-modal-title">Enter Price</h3>
+    <input type="number" id="manual-price-input" step="0.01" placeholder="0.00" onkeydown="if(event.key==='Enter') confirmManualPrice()">
+    <div class="modal-actions">
+      <button class="btn btn-clear" onclick="closeModal('manual-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmManualPrice()">Add to Ticket</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Discount Modal -->
+<div class="modal-backdrop" id="discount-modal">
+  <div class="modal">
+    <h3>Apply Ticket Discount</h3>
+    <label style="font-size:0.88rem; color:var(--muted);">Discount Label (Optional):</label>
+    <input type="text" id="disc-label-input" placeholder="e.g., Loyalty Discount">
+    <label style="font-size:0.88rem; color:var(--muted);">Discount Type:</label>
+    <select id="disc-type-input" style="width:100%; margin:6px 0 10px 0;">
+      <option value="pct">Percentage Off (%)</option>
+      <option value="fixed">Dollar Amount Off ($)</option>
+    </select>
+    <label style="font-size:0.88rem; color:var(--muted);">Value:</label>
+    <input type="number" id="disc-val-input" step="0.01" placeholder="0.00" onkeydown="if(event.key==='Enter') confirmDiscount()">
+    <div class="modal-actions">
+      <button class="btn btn-clear" onclick="closeModal('discount-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmDiscount()">Apply Discount</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal-backdrop" id="checkout-modal">
+  <div class="modal">
+    <h3>Complete Sale</h3>
+    <div class="total-line grand" style="margin-bottom:15px;">
+      <span>Total Due:</span><span id="checkout-total">$0.00</span>
+    </div>
+
+    <label style="font-size:0.88rem; color:var(--muted);">Tender Type (Reference Only):</label>
+    <div class="tender-type-group">
+      <button type="button" class="tender-btn active" data-tender="Cash" onclick="selectTenderType('Cash')">Cash</button>
+      <button type="button" class="tender-btn" data-tender="Check" onclick="selectTenderType('Check')">Check</button>
+      <button type="button" class="tender-btn" data-tender="Card" onclick="selectTenderType('Card')">Card</button>
+    </div>
+
+    <label>Amount Tendered ($):</label>
+    <input type="number" id="cash-tendered" step="0.01" placeholder="0.00" oninput="calcChange()" onkeydown="if(event.key==='Enter') finalizeSale(true)">
+    <div class="total-line" style="font-size:1.2rem; color:var(--green); font-weight:bold; margin-top:10px;">
+      <span>Change Due:</span><span id="change-due">$0.00</span>
+    </div>
+    <div class="modal-actions" style="flex-direction:column; gap:8px;">
+      <button class="btn btn-checkout" onclick="finalizeSale(true)">Complete &amp; Print Receipt</button>
+      <button class="btn btn-clear" onclick="finalizeSale(false)">Complete (No Print)</button>
+      <button class="btn btn-clear" style="background:transparent; border:1px solid var(--border); color:var(--text);" onclick="closeModal('checkout-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persistent On-Screen Receipt Modal -->
+<div class="modal-backdrop" id="receipt-viewer-modal">
+  <div class="modal" style="width:410px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h3 style="margin:0;">Transaction Receipt</h3>
+      <span style="font-size:0.82rem; color:var(--green); font-weight:600;" id="receipt-modal-badge">✓ Saved</span>
+    </div>
+    <div id="onscreen-receipt-container" class="receipt-paper"></div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn btn-primary" onclick="window.print()">Print Receipt</button>
+      <button class="btn btn-checkout" style="padding:10px 22px;" onclick="closeModal('receipt-viewer-modal')">Done / Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden Print Area -->
+<div id="print-area"></div>
+
+<script>
+  const defaultData = {
+    shopName: "Lantean Systems",
+    taxRate: 10.625,
+    theme: "dark",
+    printCustomerDefault: true,
+    csvFileName: "",
+    receiptTop: "LANTEAN SYSTEMS\nComputer Repair & IT Services\nThank you for stopping by!",
+    receiptBottom: "All sales final on software.\nThank you for your business!",
+    items: [
+      { id: 1, name: "OS Installation", type: "fixed", price: 125.00 },
+      { id: 2, name: "PC Cleanup", type: "fixed", price: 125.00 },
+      { id: 3, name: "Emsisoft Antimalware", type: "fixed", price: 60.00 },
+      { id: 4, name: "Custom Labor / Part", type: "manual", price: 0 },
+      { id: 5, name: "10% Discount", type: "disc_pct", price: 10 }
+    ],
+    history: []
+  };
+
+  let appData = Object.assign({}, defaultData, JSON.parse(localStorage.getItem('simplePOSData') || 'null'));
+  let ticket = [];
+  let activeDiscount = null; // { label, type: 'pct'|'fixed', value: number }
+  let pendingManualItem = null;
+  let selectedTenderType = 'Cash';
+  let csvFileHandle = null;
+  let csvPermissionGranted = false;
+
+  const HISTORY_PAGE_SIZE = 50;
+  let historyCurrentPage = 1;
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // --- IndexedDB Persistence for File System Handle ---
+  function openHandleDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('SimplePOSHandleDB', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('handles');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveHandleToDB(handle) {
+    try {
+      const db = await openHandleDB();
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'csvFile');
+    } catch (e) { console.warn('Could not cache file handle:', e); }
+  }
+
+  async function loadHandleFromDB() {
+    try {
+      const db = await openHandleDB();
+      return await new Promise((resolve) => {
+        const tx = db.transaction('handles', 'readonly');
+        const req = tx.objectStore('handles').get('csvFile');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  }
+
+  async function restoreSavedCsvHandle() {
+    const savedHandle = await loadHandleFromDB();
+    if (savedHandle) {
+      csvFileHandle = savedHandle;
+      appData.csvFileName = savedHandle.name;
+      saveData();
+      try {
+        const perm = await csvFileHandle.queryPermission({ mode: 'readwrite' });
+        csvPermissionGranted = (perm === 'granted');
+      } catch (e) {
+        csvPermissionGranted = false;
+      }
+    }
+    updateCsvStatusUI();
+  }
+
+  async function handleCsvPillClick() {
+    if (!csvFileHandle) {
+      await linkCsvFile();
+      return;
+    }
+    if (!csvPermissionGranted) {
+      try {
+        const perm = await csvFileHandle.requestPermission({ mode: 'readwrite' });
+        csvPermissionGranted = (perm === 'granted');
+        updateCsvStatusUI();
+      } catch (e) {
+        await linkCsvFile();
+      }
+    } else {
+      await linkCsvFile();
+    }
+  }
+
+  async function linkCsvFile() {
+    if (!window.showSaveFilePicker) {
+      alert("Your browser does not support direct disk file saving. Please use Microsoft Edge or Google Chrome on Windows 11.");
+      return;
+    }
+    try {
+      const suggested = appData.csvFileName || 'register-transactions.csv';
+      csvFileHandle = await window.showSaveFilePicker({
+        suggestedName: suggested,
+        types: [{ description: 'CSV Spreadsheet', accept: { 'text/csv': ['.csv'] } }]
+      });
+      csvPermissionGranted = true;
+      appData.csvFileName = csvFileHandle.name;
+      saveData();
+      await saveHandleToDB(csvFileHandle);
+      dismissLockBanner();
+      updateCsvStatusUI();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+      }
+    }
+  }
+
+  function updateCsvStatusUI() {
+    const pill = document.getElementById('csv-status-btn');
+    const histStatus = document.getElementById('history-csv-status');
+    const hint = document.getElementById('saved-csv-hint');
+
+    if (csvFileHandle && csvPermissionGranted) {
+      pill.className = 'csv-pill linked';
+      pill.innerText = `● Auto-CSV: ${csvFileHandle.name}`;
+      histStatus.innerText = `Active & Linked (${csvFileHandle.name})`;
+      histStatus.style.color = 'var(--green)';
+    } else if (csvFileHandle && !csvPermissionGranted) {
+      pill.className = 'csv-pill needs-perm';
+      pill.innerText = `● Auto-CSV: Click to Unlock (${csvFileHandle.name})`;
+      histStatus.innerText = `Remembered (${csvFileHandle.name}) — Click the amber badge at top to unlock`;
+      histStatus.style.color = 'var(--amber)';
+    } else {
+      pill.className = 'csv-pill';
+      pill.innerText = '● Auto-CSV: Not Linked';
+      histStatus.innerText = appData.csvFileName
+        ? `Not linked yet (Last configured file: ${appData.csvFileName})`
+        : 'Not linked (click "Set Auto-Save CSV File" to enable)';
+      histStatus.style.color = 'var(--muted)';
+    }
+
+    hint.innerText = appData.csvFileName ? `Configured CSV filename: ${appData.csvFileName}` : '';
+  }
+
+  const CSV_HEADER = "Date,Customer Name,Phone,Email,Address,Items,Subtotal,Discount,Tax,Total,Tendered,Change,Tender Type\n";
+
+  function buildCsvRow(tx) {
+    const c = tx.customer || {};
+    const itemsStr = tx.items.map(i => `${i.qty > 1 ? i.qty + 'x ' : ''}${i.name} ($${(i.price * i.qty).toFixed(2)})`).join(' | ');
+    const esc = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+    const tenderType = tx.tenderType || 'Cash';
+    return `${esc(tx.date)},${esc(c.name)},${esc(c.phone)},${esc(c.email)},${esc(c.address)},${esc(itemsStr)},${tx.subtotal.toFixed(2)},${(tx.discountAmount || 0).toFixed(2)},${tx.tax.toFixed(2)},${tx.total.toFixed(2)},${tx.tendered.toFixed(2)},${tx.change.toFixed(2)},${esc(tenderType)}\n`;
+  }
+
+  async function appendTransactionToCSV(tx) {
+    if (!csvFileHandle) return;
+    try {
+      if (!csvPermissionGranted) {
+        const perm = await csvFileHandle.requestPermission({ mode: 'readwrite' });
+        csvPermissionGranted = (perm === 'granted');
+        updateCsvStatusUI();
+        if (!csvPermissionGranted) return;
+      }
+
+      const file = await csvFileHandle.getFile();
+      let existingText = await file.text();
+      if (!existingText || existingText.trim().length === 0) {
+        existingText = CSV_HEADER;
+      } else if (!existingText.endsWith('\n')) {
+        existingText += '\n';
+      }
+
+      const writable = await csvFileHandle.createWritable();
+      await writable.write(existingText + buildCsvRow(tx));
+      await writable.close();
+      dismissLockBanner();
+    } catch (err) {
+      console.error("Auto-CSV write failed:", err);
+      const banner = document.getElementById('lock-banner');
+      const bannerText = document.getElementById('lock-banner-text');
+      if (err.name === 'NotAllowedError') {
+        csvPermissionGranted = false;
+        updateCsvStatusUI();
+      } else {
+        bannerText.innerText = `Warning: Could not write to "${csvFileHandle.name}" because it is locked by another program (e.g., LibreOffice Calc or Excel). Close it to resume auto-saving!`;
+        banner.classList.add('active');
+      }
+    }
+  }
+
+  function dismissLockBanner() {
+    document.getElementById('lock-banner').classList.remove('active');
+  }
+
+  // --- Theme Management ---
+  function applyTheme(theme) {
+    appData.theme = theme;
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+      document.getElementById('theme-toggle-btn').innerText = '🌙 Dark';
+    } else {
+      document.body.classList.remove('light-mode');
+      document.getElementById('theme-toggle-btn').innerText = '☀️ Light';
+    }
+    document.getElementById('set-theme').value = theme;
+    saveData();
+  }
+
+  function toggleTheme() {
+    applyTheme(appData.theme === 'light' ? 'dark' : 'light');
+  }
+
+  // --- Core Initialization & Navigation ---
+  function saveData() {
+    try {
+      localStorage.setItem('simplePOSData', JSON.stringify(appData));
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+      alert("Warning: Browser storage is full! Please export your history to CSV and clear old local history to continue saving transactions.");
+    }
+  }
+
+  async function init() {
+    applyTheme(appData.theme || 'dark');
+    document.getElementById('header-shop-name').innerText = appData.shopName;
+    document.getElementById('set-shop-name').value = appData.shopName;
+    document.getElementById('set-tax-rate').value = appData.taxRate;
+    document.getElementById('set-receipt-top').value = appData.receiptTop;
+    document.getElementById('set-receipt-bottom').value = appData.receiptBottom;
+    document.getElementById('set-print-customer').checked = appData.printCustomerDefault !== false;
+    document.getElementById('cust-print-check').checked = appData.printCustomerDefault !== false;
+
+    renderItemsGrid();
+    renderTicket();
+    renderSettingsItems();
+    renderHistory();
+    await restoreSavedCsvHandle();
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.id !== 'theme-toggle-btn') b.classList.remove('active');
+    });
+    document.getElementById(tab + '-view').classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // --- Customer Panel Helpers ---
+  function toggleCustomerPanel() {
+    const panel = document.getElementById('cust-panel');
+    const arrow = document.getElementById('cust-arrow');
+    const isOpen = panel.classList.toggle('open');
+    arrow.innerText = isOpen ? '▲' : '▼';
+  }
+
+  function updateCustLabel() {
+    const name = document.getElementById('cust-name').value.trim();
+    document.getElementById('cust-toggle-label').innerText = name
+      ? `Customer: ${name}`
+      : '+ Add Customer Info (Optional)';
+  }
+
+  function getCustomerData() {
+    const name = document.getElementById('cust-name').value.trim();
+    const phone = document.getElementById('cust-phone').value.trim();
+    const email = document.getElementById('cust-email').value.trim();
+    const address = document.getElementById('cust-address').value.trim();
+    const printOnReceipt = document.getElementById('cust-print-check').checked;
+    const hasData = !!(name || phone || email || address);
+    return { name, phone, email, address, printOnReceipt, hasData };
+  }
+
+  function clearCustomerData() {
+    document.getElementById('cust-name').value = '';
+    document.getElementById('cust-phone').value = '';
+    document.getElementById('cust-email').value = '';
+    document.getElementById('cust-address').value = '';
+    document.getElementById('cust-print-check').checked = appData.printCustomerDefault !== false;
+    updateCustLabel();
+  }
+
+  // --- Register Items & Quantities ---
+  function renderItemsGrid() {
+    const grid = document.getElementById('items-grid');
+    grid.innerHTML = '';
+    appData.items.forEach(item => {
+      const btn = document.createElement('button');
+      const isDisc = item.type === 'disc_fixed' || item.type === 'disc_pct';
+      btn.className = 'item-btn ' + (item.type === 'manual' ? 'manual' : '') + (isDisc ? ' discount-btn' : '');
+      let priceLabel = '$' + item.price.toFixed(2);
+      if (item.type === 'manual') priceLabel = 'Enter Price';
+      else if (item.type === 'disc_fixed') priceLabel = '-$' + item.price.toFixed(2) + ' Off';
+      else if (item.type === 'disc_pct') priceLabel = '-' + item.price + '% Off';
+
+      btn.innerHTML = `
+        <span class="name">${escapeHtml(item.name)}</span>
+        <span class="price">${escapeHtml(priceLabel)}</span>
+      `;
+      btn.onclick = () => handleItemClick(item);
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleItemClick(item) {
+    if (item.type === 'fixed') {
+      addOrIncrementTicketItem(item.name, item.price);
+    } else if (item.type === 'disc_fixed') {
+      activeDiscount = { label: item.name, type: 'fixed', value: item.price };
+      renderTicket();
+    } else if (item.type === 'disc_pct') {
+      activeDiscount = { label: item.name, type: 'pct', value: item.price };
+      renderTicket();
+    } else {
+      pendingManualItem = item;
+      document.getElementById('manual-modal-title').innerText = item.name + " - Enter Price";
+      const input = document.getElementById('manual-price-input');
+      input.value = '';
+      document.getElementById('manual-modal').classList.add('active');
+      setTimeout(() => input.focus(), 50);
+    }
+  }
+
+  function addOrIncrementTicketItem(name, price) {
+    const existing = ticket.find(i => i.name === name && i.price === price);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      ticket.push({ name, price, qty: 1 });
+    }
+    renderTicket();
+  }
+
+  function changeItemQty(index, delta) {
+    ticket[index].qty += delta;
+    if (ticket[index].qty <= 0) {
+      ticket.splice(index, 1);
+    }
+    renderTicket();
+  }
+
+  function confirmManualPrice() {
+    const val = parseFloat(document.getElementById('manual-price-input').value);
+    if (!isNaN(val) && val >= 0) {
+      addOrIncrementTicketItem(pendingManualItem.name, val);
+      closeModal('manual-modal');
+    }
+  }
+
+  // --- Ticket Discount Logic ---
+  function openDiscountModal() {
+    document.getElementById('disc-label-input').value = activeDiscount ? activeDiscount.label : '';
+    document.getElementById('disc-type-input').value = activeDiscount ? activeDiscount.type : 'pct';
+    document.getElementById('disc-val-input').value = activeDiscount ? activeDiscount.value : '';
+    document.getElementById('discount-modal').classList.add('active');
+    setTimeout(() => document.getElementById('disc-val-input').focus(), 50);
+  }
+
+  function confirmDiscount() {
+    const val = parseFloat(document.getElementById('disc-val-input').value);
+    const type = document.getElementById('disc-type-input').value;
+    const rawLabel = document.getElementById('disc-label-input').value.trim();
+    if (!isNaN(val) && val > 0) {
+      const defaultLabel = type === 'pct' ? `${val}% Discount` : `$${val.toFixed(2)} Discount`;
+      activeDiscount = { label: rawLabel || defaultLabel, type, value: val };
+      renderTicket();
+      closeModal('discount-modal');
+    }
+  }
+
+  function removeDiscount() {
+    activeDiscount = null;
+    renderTicket();
+  }
+
+  // --- Ticket Calculations ---
+  function getTotals() {
+    const subtotal = ticket.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    let discountAmount = 0;
+    if (activeDiscount && subtotal > 0) {
+      if (activeDiscount.type === 'pct') {
+        discountAmount = subtotal * (activeDiscount.value / 100);
+      } else {
+        discountAmount = activeDiscount.value;
+      }
+      discountAmount = Math.min(subtotal, discountAmount);
+    }
+    const taxableAmount = Math.max(0, subtotal - discountAmount);
+    const tax = taxableAmount * (appData.taxRate / 100);
+    const total = taxableAmount + tax;
+    return { subtotal, discountAmount, tax, total };
+  }
+
+  function renderTicket() {
+    const list = document.getElementById('ticket-items');
+    list.innerHTML = '';
+    let totalUnits = 0;
+
+    ticket.forEach((item, index) => {
+      totalUnits += item.qty;
+      const lineTotal = item.price * item.qty;
+      const row = document.createElement('div');
+      row.className = 'ticket-row';
+      row.innerHTML = `
+        <div class="ticket-row-info">
+          <strong>${escapeHtml(item.name)}</strong>
+          <small>$${item.price.toFixed(2)} each</small>
+        </div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="changeItemQty(${index}, -1)">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="changeItemQty(${index}, 1)">+</button>
+        </div>
+        <div class="ticket-row-actions">
+          <strong>$${lineTotal.toFixed(2)}</strong>
+          <button class="del-btn" onclick="removeTicketItem(${index})" title="Remove Item">&times;</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+
+    const { subtotal, discountAmount, tax, total } = getTotals();
+    document.getElementById('item-count').innerText = `${totalUnits} item${totalUnits === 1 ? '' : 's'}`;
+    document.getElementById('lbl-subtotal').innerText = '$' + subtotal.toFixed(2);
+
+    const discBadgeArea = document.getElementById('active-discount-display');
+    const discRow = document.getElementById('row-discount');
+    if (activeDiscount && discountAmount > 0) {
+      discBadgeArea.innerHTML = `
+        <span class="disc-active-badge">
+          ${escapeHtml(activeDiscount.label)}
+          <button onclick="removeDiscount()" title="Remove Discount">&times;</button>
+        </span>
+      `;
+      discRow.style.display = 'flex';
+      document.getElementById('lbl-discount-name').innerText = activeDiscount.label;
+      document.getElementById('lbl-discount').innerText = '-$' + discountAmount.toFixed(2);
+    } else {
+      discBadgeArea.innerHTML = '';
+      discRow.style.display = 'none';
+    }
+
+    document.getElementById('lbl-tax-rate').innerText = appData.taxRate;
+    document.getElementById('lbl-tax').innerText = '$' + tax.toFixed(2);
+    document.getElementById('lbl-total').innerText = '$' + total.toFixed(2);
+  }
+
+  function removeTicketItem(index) {
+    ticket.splice(index, 1);
+    renderTicket();
+  }
+
+  function clearTicket() {
+    ticket = [];
+    activeDiscount = null;
+    clearCustomerData();
+    renderTicket();
+  }
+
+  // --- Checkout, Tender Type, Persistent Receipt Viewer & Printing ---
+  function selectTenderType(type) {
+    selectedTenderType = type;
+    document.querySelectorAll('.tender-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tender === type);
+    });
+  }
+
+  function openCheckout() {
+    if (ticket.length === 0) return;
+    selectTenderType('Cash');
+    const { total } = getTotals();
+    document.getElementById('checkout-total').innerText = '$' + total.toFixed(2);
+    const tenderedInput = document.getElementById('cash-tendered');
+    tenderedInput.value = total.toFixed(2);
+    calcChange();
+    document.getElementById('checkout-modal').classList.add('active');
+    setTimeout(() => { tenderedInput.focus(); tenderedInput.select(); }, 50);
+  }
+
+  function calcChange() {
+    const { total } = getTotals();
+    const tendered = parseFloat(document.getElementById('cash-tendered').value) || 0;
+    const change = Math.max(0, tendered - total);
+    document.getElementById('change-due').innerText = '$' + change.toFixed(2);
+  }
+
+  async function finalizeSale(shouldPrint) {
+    const { subtotal, discountAmount, tax, total } = getTotals();
+    const tendered = parseFloat(document.getElementById('cash-tendered').value) || total;
+    const change = Math.max(0, tendered - total);
+    const customer = getCustomerData();
+
+    const tx = {
+      id: Date.now(),
+      date: new Date().toLocaleString(),
+      tenderType: selectedTenderType,
+      customer,
+      items: ticket.map(i => ({ ...i })),
+      subtotal,
+      discountLabel: activeDiscount ? activeDiscount.label : '',
+      discountAmount,
+      tax,
+      total,
+      tendered,
+      change
+    };
+
+    appData.history.unshift(tx);
+    historyCurrentPage = 1;
+    saveData();
+    renderHistory();
+
+    // Auto-write to linked CSV file ONLY on new completed sales
+    await appendTransactionToCSV(tx);
+
+    closeModal('checkout-modal');
+    clearTicket();
+
+    // Always show persistent on-screen receipt
+    showReceiptModal(tx, shouldPrint, true);
+  }
+
+  function printCurrentPreview() {
+    if (ticket.length === 0) return;
+    const { subtotal, discountAmount, tax, total } = getTotals();
+    const customer = getCustomerData();
+    const quoteTx = {
+      date: new Date().toLocaleString() + " (QUOTE)",
+      customer,
+      items: ticket.map(i => ({ ...i })),
+      subtotal,
+      discountLabel: activeDiscount ? activeDiscount.label : '',
+      discountAmount,
+      tax,
+      total,
+      tendered: null,
+      change: null
+    };
+    showReceiptModal(quoteTx, true, false);
+  }
+
+  function buildReceiptHTML(tx) {
+    const topHtml = escapeHtml(appData.receiptTop).replace(/\n/g, '<br>');
+    const bottomHtml = escapeHtml(appData.receiptBottom).replace(/\n/g, '<br>');
+
+    let custHtml = '';
+    if (tx.customer && tx.customer.hasData && tx.customer.printOnReceipt) {
+      const lines = [];
+      if (tx.customer.name) lines.push(`<strong>Customer:</strong> ${escapeHtml(tx.customer.name)}`);
+      if (tx.customer.phone) lines.push(`Phone: ${escapeHtml(tx.customer.phone)}`);
+      if (tx.customer.email) lines.push(`Email: ${escapeHtml(tx.customer.email)}`);
+      if (tx.customer.address) lines.push(`Addr: ${escapeHtml(tx.customer.address)}`);
+      if (lines.length > 0) {
+        custHtml = `<div class="r-left" style="font-size:11px;">${lines.join('<br>')}</div><div class="r-line"></div>`;
+      }
+    }
+
+    const itemsHtml = tx.items.map(i => {
+      const qtyPrefix = (i.qty && i.qty > 1) ? `${i.qty}x ` : '';
+      const lineTotal = i.price * (i.qty || 1);
+      return `
+        <div class="r-row">
+          <span>${qtyPrefix}${escapeHtml(i.name)}</span>
+          <span>$${lineTotal.toFixed(2)}</span>
+        </div>
+      `;
+    }).join('');
+
+    const discHtml = (tx.discountAmount && tx.discountAmount > 0) ? `
+      <div class="r-row"><span>${escapeHtml(tx.discountLabel || 'Discount')}</span><span>-$${tx.discountAmount.toFixed(2)}</span></div>
+    ` : '';
+
+    const tenderType = tx.tenderType || 'Cash';
+    const cashHtml = tx.tendered !== null ? `
+      <div class="r-row"><span>Tender Type</span><span>${escapeHtml(tenderType)}</span></div>
+      <div class="r-row"><span>Amount Tendered</span><span>$${tx.tendered.toFixed(2)}</span></div>
+      <div class="r-row"><span>Change Due</span><span>$${tx.change.toFixed(2)}</span></div>
+    ` : '';
+
+    return `
+      <div class="r-center">${topHtml}</div>
+      <div class="r-line"></div>
+      <div class="r-center" style="font-size:11px;">${escapeHtml(tx.date)}</div>
+      <div class="r-line"></div>
+      ${custHtml}
+      ${itemsHtml}
+      <div class="r-line"></div>
+      <div class="r-row"><span>Subtotal</span><span>$${tx.subtotal.toFixed(2)}</span></div>
+      ${discHtml}
+      <div class="r-row"><span>Tax (${appData.taxRate}%)</span><span>$${tx.tax.toFixed(2)}</span></div>
+      <div class="r-row r-bold" style="font-size:14px;"><span>TOTAL</span><span>$${tx.total.toFixed(2)}</span></div>
+      ${cashHtml}
+      <div class="r-line"></div>
+      <div class="r-center">${bottomHtml}</div>
+    `;
+  }
+
+  function showReceiptModal(tx, triggerPrint, isNewSale) {
+    const html = buildReceiptHTML(tx);
+    document.getElementById('onscreen-receipt-container').innerHTML = html;
+    document.getElementById('print-area').innerHTML = html;
+    document.getElementById('receipt-modal-badge').style.display = isNewSale ? 'inline' : 'none';
+    document.getElementById('receipt-viewer-modal').classList.add('active');
+
+    if (triggerPrint) {
+      setTimeout(() => window.print(), 100);
+    }
+  }
+
+  // --- Settings & JSON Backup/Restore ---
+  function saveGeneralSettings() {
+    appData.shopName = document.getElementById('set-shop-name').value || "Simple Cash Register";
+    appData.taxRate = parseFloat(document.getElementById('set-tax-rate').value) || 0;
+    appData.receiptTop = document.getElementById('set-receipt-top').value;
+    appData.receiptBottom = document.getElementById('set-receipt-bottom').value;
+    appData.printCustomerDefault = document.getElementById('set-print-customer').checked;
+    document.getElementById('cust-print-check').checked = appData.printCustomerDefault;
+
+    saveData();
+    document.getElementById('header-shop-name').innerText = appData.shopName;
+    renderTicket();
+    alert("Settings saved!");
+  }
+
+  function togglePriceInput() {
+    const type = document.getElementById('new-item-type').value;
+    const priceInput = document.getElementById('new-item-price');
+    priceInput.style.display = type === 'manual' ? 'none' : 'inline-block';
+    priceInput.placeholder = type === 'disc_pct' ? 'Percent (%)' : 'Amount ($)';
+  }
+
+  function addItem() {
+    const name = document.getElementById('new-item-name').value.trim();
+    const type = document.getElementById('new-item-type').value;
+    const price = parseFloat(document.getElementById('new-item-price').value) || 0;
+    if (!name) return;
+
+    appData.items.push({ id: Date.now(), name, type, price });
+    saveData();
+    document.getElementById('new-item-name').value = '';
+    document.getElementById('new-item-price').value = '';
+    renderItemsGrid();
+    renderSettingsItems();
+  }
+
+  function deleteItem(index) {
+    appData.items.splice(index, 1);
+    saveData();
+    renderItemsGrid();
+    renderSettingsItems();
+  }
+
+  function renderSettingsItems() {
+    const list = document.getElementById('settings-items-list');
+    list.innerHTML = appData.items.map((item, idx) => {
+      let badge = '$' + item.price.toFixed(2);
+      if (item.type === 'manual') badge = 'Manual Price';
+      else if (item.type === 'disc_fixed') badge = '-$' + item.price.toFixed(2) + ' Discount';
+      else if (item.type === 'disc_pct') badge = '-' + item.price + '% Discount';
+      return `
+        <div class="ticket-row" style="margin-bottom:8px;">
+          <span><strong>${escapeHtml(item.name)}</strong> (${escapeHtml(badge)})</span>
+          <button class="btn-danger" onclick="deleteItem(${idx})">Remove</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function exportSettingsJSON() {
+    const backup = {
+      shopName: appData.shopName,
+      taxRate: appData.taxRate,
+      theme: appData.theme,
+      printCustomerDefault: appData.printCustomerDefault,
+      csvFileName: appData.csvFileName,
+      receiptTop: appData.receiptTop,
+      receiptBottom: appData.receiptBottom,
+      items: appData.items
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `register-settings-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+
+  function importSettingsJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.shopName !== undefined) appData.shopName = imported.shopName;
+        if (imported.taxRate !== undefined) appData.taxRate = imported.taxRate;
+        if (imported.theme !== undefined) appData.theme = imported.theme;
+        if (imported.printCustomerDefault !== undefined) appData.printCustomerDefault = imported.printCustomerDefault;
+        if (imported.csvFileName !== undefined) appData.csvFileName = imported.csvFileName;
+        if (imported.receiptTop !== undefined) appData.receiptTop = imported.receiptTop;
+        if (imported.receiptBottom !== undefined) appData.receiptBottom = imported.receiptBottom;
+        if (Array.isArray(imported.items)) appData.items = imported.items;
+
+        saveData();
+        init();
+        let msg = "Settings restored successfully!";
+        if (appData.csvFileName && !csvFileHandle) {
+          msg += `\n\nNote: Your backup references the CSV file "${appData.csvFileName}". Click "Set Auto-Save CSV File" to link it on this computer.`;
+        }
+        alert(msg);
+      } catch (err) {
+        alert("Invalid JSON settings file.");
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  // --- History Management (Search + 50-Item Pagination + Read-Only View/Reprint) ---
+  function onHistorySearchInput() {
+    historyCurrentPage = 1;
+    renderHistory();
+  }
+
+  function clearHistorySearch() {
+    document.getElementById('history-search').value = '';
+    historyCurrentPage = 1;
+    renderHistory();
+  }
+
+  function goToHistoryPage(page) {
+    historyCurrentPage = page;
+    renderHistory();
+    const container = document.querySelector('#history-view .container-scroll');
+    if (container) container.scrollTop = 0;
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    const paginationEl = document.getElementById('history-pagination');
+    const searchInput = document.getElementById('history-search');
+    const clearBtn = document.getElementById('history-search-clear');
+
+    const rawQuery = searchInput ? searchInput.value.trim() : '';
+    if (clearBtn) {
+      clearBtn.style.display = rawQuery ? 'inline-block' : 'none';
+    }
+
+    if (appData.history.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);">No transactions recorded yet.</p>';
+      paginationEl.innerHTML = '';
+      return;
+    }
+
+    const q = rawQuery.toLowerCase();
+    const qDigits = rawQuery.replace(/\D/g, '');
+
+    const indexedHistory = appData.history.map((tx, origIdx) => ({ tx, origIdx }));
+    const filtered = q
+      ? indexedHistory.filter(({ tx }) => {
+          const c = tx.customer || {};
+          const nameMatch = (c.name || '').toLowerCase().includes(q);
+          const emailMatch = (c.email || '').toLowerCase().includes(q);
+          const phoneRaw = (c.phone || '').toLowerCase();
+          const phoneMatch = phoneRaw.includes(q) || (qDigits.length >= 3 && phoneRaw.replace(/\D/g, '').includes(qDigits));
+          return nameMatch || emailMatch || phoneMatch;
+        })
+      : indexedHistory;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<p style="color:var(--muted);">No transactions match "${escapeHtml(rawQuery)}".</p>`;
+      paginationEl.innerHTML = '';
+      return;
+    }
+
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / HISTORY_PAGE_SIZE));
+    if (historyCurrentPage > totalPages) historyCurrentPage = totalPages;
+    if (historyCurrentPage < 1) historyCurrentPage = 1;
+
+    const startIdx = (historyCurrentPage - 1) * HISTORY_PAGE_SIZE;
+    const pageSlice = filtered.slice(startIdx, startIdx + HISTORY_PAGE_SIZE);
+
+    list.innerHTML = pageSlice.map(({ tx, origIdx }) => {
+      const c = tx.customer || {};
+      const custParts = [];
+      if (c.name) custParts.push(c.name);
+      if (c.phone) custParts.push(c.phone);
+      if (c.email) custParts.push(c.email);
+      const custTag = custParts.length
+        ? ` <span style="color:var(--accent);">[${escapeHtml(custParts.join(' • '))}]</span>`
+        : '';
+
+      const tenderType = tx.tenderType || 'Cash';
+      const tenderClass = tenderType === 'Check' ? 'tender-check' : (tenderType === 'Card' ? 'tender-card' : 'tender-cash');
+      const tenderBadge = `<span class="tender-badge ${tenderClass}">${escapeHtml(tenderType)}</span>`;
+
+      const itemsSummary = tx.items.map(i => `${(i.qty && i.qty > 1) ? i.qty + 'x ' : ''}${escapeHtml(i.name)}`).join(', ');
+      return `
+        <div class="ticket-row" style="margin-bottom:8px;">
+          <div style="flex:1; min-width:0;">
+            <strong>${escapeHtml(tx.date)}</strong>${tenderBadge}${custTag} &mdash; ${itemsSummary}
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong>$${tx.total.toFixed(2)}</strong>
+            <button class="btn-primary" style="padding:5px 10px; font-size:0.82rem;" onclick="showReceiptModal(appData.history[${origIdx}], false, false)">View Receipt</button>
+            <button class="btn-primary" style="padding:5px 10px; font-size:0.82rem;" onclick="showReceiptModal(appData.history[${origIdx}], true, false)">Reprint</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const showingFrom = startIdx + 1;
+    const showingTo = startIdx + pageSlice.length;
+    paginationEl.innerHTML = `
+      <div class="pagination-bar">
+        <span>Showing ${showingFrom}&ndash;${showingTo} of ${totalItems} transaction${totalItems === 1 ? '' : 's'}</span>
+        ${totalPages > 1 ? `
+          <div class="pagination-controls">
+            <button class="page-btn" onclick="goToHistoryPage(1)" ${historyCurrentPage === 1 ? 'disabled' : ''}>&laquo; First</button>
+            <button class="page-btn" onclick="goToHistoryPage(${historyCurrentPage - 1})" ${historyCurrentPage === 1 ? 'disabled' : ''}>&lsaquo; Prev</button>
+            <span style="padding:0 6px;">Page ${historyCurrentPage} of ${totalPages}</span>
+            <button class="page-btn" onclick="goToHistoryPage(${historyCurrentPage + 1})" ${historyCurrentPage === totalPages ? 'disabled' : ''}>Next &rsaquo;</button>
+            <button class="page-btn" onclick="goToHistoryPage(${totalPages})" ${historyCurrentPage === totalPages ? 'disabled' : ''}>Last &raquo;</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function exportHistoryCSV() {
+    if (appData.history.length === 0) return;
+    let csv = CSV_HEADER;
+    [...appData.history].reverse().forEach(tx => {
+      csv += buildCsvRow(tx);
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = appData.csvFileName || `register-history-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  function clearHistory() {
+    if (confirm("Are you sure you want to delete all local transaction history? (This will not delete rows already written to your CSV file on disk.)")) {
+      appData.history = [];
+      historyCurrentPage = 1;
+      saveData();
+      renderHistory();
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  init();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js');
+    });
+  }
+</script>
+</body>
+</html>
